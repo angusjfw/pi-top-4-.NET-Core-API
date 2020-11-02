@@ -65,36 +65,51 @@ namespace PiTop.Interactive.Rover
             await csharpKernel.SetVariableAsync(nameof(resourceScanner), resourceScanner);
 
             var source = new CancellationTokenSource();
+            await csharpKernel.SetVariableAsync(nameof(source), source);
 
             var robotLoop = Task.Run(() =>
             {
+                Console.WriteLine("starting robotLoop");
+                Console.WriteLine("source.IsCancellationRequested: ");
+                Console.WriteLine(source.IsCancellationRequested);
                 while (!source.IsCancellationRequested)
                 {
+                    Console.WriteLine("running robotLoop");
                     if (!source.IsCancellationRequested)
                     {
+                        Console.WriteLine("invoking robotLoop perceive");
                         roverBrain.Perceive?.Invoke(roverBody, DateTime.Now, source.Token);
                     }
 
                     if (!source.IsCancellationRequested)
                     {
+                        Console.WriteLine("invoking robotLoop plan");
                         var planResult = roverBrain.Plan?.Invoke(roverBody, DateTime.Now, source.Token) ??
                                          PlanningResult.NoPlan;
                         if (!source.IsCancellationRequested && planResult != PlanningResult.NoPlan)
                         {
+                            Console.WriteLine("invoking robotLoop act");
                             roverBrain.Act?.Invoke(roverBody, DateTime.Now, source.Token);
                         }
                     }
+                    Console.WriteLine("source.IsCancellationRequested: ");
+                    Console.WriteLine(source.IsCancellationRequested);
                 }
 
                 roverBody.MotionComponent.Stop();
             }, source.Token);
 
+            await csharpKernel.SetVariableAsync(nameof(robotLoop), robotLoop);
+
             var reactLoop = Task.Run(() =>
             {
+                Console.WriteLine("starting reactLoop");
                 while (!source.IsCancellationRequested)
                 {
+                    Console.WriteLine("running reactLoop");
                     if (!source.IsCancellationRequested)
                     {
+                        Console.WriteLine("invoking reactLoop react");
                         roverBrain.React?.Invoke(roverBody, DateTime.Now, source.Token);
                     }
                 }
